@@ -1,0 +1,9 @@
+main: net.chaossquad.rocketanimationplugin.RocketAnimationPlugin
+name: RocketAnimationPlugin
+version: 1.0
+commands:
+  rocketanimation:
+    description: Plugin command
+    usage: /rocketanimation
+    permission: rocketanimation
+api-version: 1.21
