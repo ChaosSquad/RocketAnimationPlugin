@@ -1,5 +1,6 @@
 package net.chaossquad.rocketanimationplugin;
 
+import net.chaossquad.mclib.PacketUtils;
 import net.chaossquad.mclib.blocks.BlockBox;
 import net.chaossquad.mclib.blocks.BlockStructure;
 import net.chaossquad.mclib.packetentity.PacketEntity;
@@ -84,6 +85,73 @@ public class RocketAnimationPlugin extends JavaPlugin implements CommandExecutor
                 this.rocketStructure = structure;
 
                 sender.sendMessage("§aStructure loaded!");
+            }
+            case "spawn" -> {
+
+                if (this.rocketStructure == null) {
+                    sender.sendMessage("§cNo structure loaded!");
+                    return true;
+                }
+
+                // Location
+
+                Location location = null;
+                if (args.length > 4) {
+                    location = new Location(
+                            this.getServer().getWorld(args[1]),
+                            Integer.parseInt(args[2]),
+                            Integer.parseInt(args[3]),
+                            Integer.parseInt(args[4])
+                    );
+                }
+                if (location == null && sender instanceof Player player) {
+                    location = player.getLocation().clone();
+                }
+                if (location == null) {
+                    sender.sendMessage("§cLocation not specified!");
+                    return true;
+                }
+
+                // Spawn
+
+                List<PacketEntity<Display.BlockDisplay>> spawned = PacketUtils.spawnBlockStructure(this.packetEntityManager, this.rocketStructure, location, List.of(this.getName()));
+                this.rockets.add(spawned);
+
+            }
+            case "list" -> {
+
+                sender.sendMessage("§7Spawned rocket entities");
+                for (int i = 0; i < this.rockets.size(); i++) {
+                    List<PacketEntity<Display.BlockDisplay>> rocket = this.rockets.get(i);
+                    sender.sendMessage("§7" + i + ": " + rocket.size() + " entities, " + rocket.stream().filter(packetEntity -> !packetEntity.isRemoved()).count() + " alive");
+                }
+
+            }
+            case "remove" -> {
+
+                if (args.length < 2) {
+                    sender.sendMessage("§cUsage: /rocketanimation remove <id>");
+                    return true;
+                }
+
+                List<PacketEntity<Display.BlockDisplay>> rocket = this.rockets.get(Integer.parseInt(args[1]));
+                for (PacketEntity<Display.BlockDisplay> entity : rocket) {
+                    entity.remove();
+                }
+
+                this.rockets.remove(rocket);
+                sender.sendMessage("§aRocket removed");
+            }
+            case "clear" -> {
+
+                for (List<PacketEntity<Display.BlockDisplay>> rocket : this.rockets) {
+                    for (PacketEntity<Display.BlockDisplay> entity : rocket) {
+                        entity.remove();
+                    }
+                }
+
+                this.rockets.clear();
+                sender.sendMessage("§aCleared all rockets");
             }
             default -> sender.sendMessage("§cUnknown subcommand");
         }
