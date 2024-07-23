@@ -6,4 +6,8 @@ commands:
     description: Plugin command
     usage: /rocketanimation
     permission: rocketanimation
+  rapacketentities:
+    description: Packet Entities Debug Command
+    usage: /rapacketentities
+    permission: rocketanimation
 api-version: 1.21

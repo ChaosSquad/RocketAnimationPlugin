@@ -3,8 +3,10 @@ package net.chaossquad.rocketanimationplugin;
 import net.chaossquad.mclib.PacketUtils;
 import net.chaossquad.mclib.blocks.BlockBox;
 import net.chaossquad.mclib.blocks.BlockStructure;
+import net.chaossquad.mclib.packetentity.PacketEntitiesSubcommand;
 import net.chaossquad.mclib.packetentity.PacketEntity;
 import net.chaossquad.mclib.packetentity.PacketEntityManager;
+import net.chaossquad.mclib.packetentity.PacketEntityManagerProvider;
 import net.minecraft.world.entity.Display;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -13,13 +15,18 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class RocketAnimationPlugin extends JavaPlugin implements CommandExecutor, TabCompleter, Listener {
+public class RocketAnimationPlugin extends JavaPlugin implements CommandExecutor, TabCompleter, Listener, PacketEntityManagerProvider {
     private PacketEntityManager packetEntityManager;
     private BlockStructure rocketStructure;
     private List<List<PacketEntity<Display.BlockDisplay>>> rockets;
@@ -29,6 +36,10 @@ public class RocketAnimationPlugin extends JavaPlugin implements CommandExecutor
         this.getServer().getPluginManager().registerEvents(this, this);
         this.getCommand("rocketanimation").setExecutor(this);
         this.getCommand("rocketanimation").setTabCompleter(this);
+
+        PacketEntitiesSubcommand packetEntitiesSubcommand = new PacketEntitiesSubcommand(this, "rocketanimation");
+        this.getCommand("rapacketentities").setExecutor(packetEntitiesSubcommand);
+        this.getCommand("rapacketentities").setTabCompleter(packetEntitiesSubcommand);
 
         this.packetEntityManager = new PacketEntityManager(this);
         this.getServer().getPluginManager().registerEvents(this.packetEntityManager, this);
@@ -43,7 +54,47 @@ public class RocketAnimationPlugin extends JavaPlugin implements CommandExecutor
         this.packetEntityManager = null;
     }
 
+    // UTILITIES
+
+    public void updatePlayers() {
+
+        for (List<PacketEntity<Display.BlockDisplay>> rockets : this.rockets) {
+            for (PacketEntity<Display.BlockDisplay> rocket : rockets) {
+                for (Player player : this.getServer().getOnlinePlayers()) {
+                    if (!rocket.getPlayers().contains(player) && player.getWorld() == rocket.getWorld()) {
+                        rocket.addPlayer(player);
+                    }
+                }
+            }
+        }
+
+    }
+
     // LISTENER
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        new BukkitRunnable() {
+
+            @Override
+            public void run() {
+                RocketAnimationPlugin.this.updatePlayers();
+            }
+
+        }.runTaskLater(this, 20);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerChangeWorld(PlayerChangedWorldEvent event) {
+        new BukkitRunnable() {
+
+            @Override
+            public void run() {
+                RocketAnimationPlugin.this.updatePlayers();
+            }
+
+        }.runTaskLater(this, 20);
+    }
 
     // COMMAND
 
@@ -63,6 +114,11 @@ public class RocketAnimationPlugin extends JavaPlugin implements CommandExecutor
         switch (args[0]) {
             case "load" -> {
 
+                if (args.length < 7) {
+                    sender.sendMessage("§cUsage: /rocketanimation load <x1> <y1> <z1> <x2> <y2> <z2> [world]");
+                    return true;
+                }
+
                 BlockBox box = new BlockBox(
                         Integer.parseInt(args[1]),
                         Integer.parseInt(args[2]),
@@ -73,7 +129,7 @@ public class RocketAnimationPlugin extends JavaPlugin implements CommandExecutor
                 );
                 box.sort();
 
-                World world = this.getServer().getWorld(args[7]);
+                World world = args.length > 7 ? this.getServer().getWorld(args[7]) : null;
                 if (world == null && sender instanceof Player player) world = player.getWorld();
                 if (world == null) {
                     sender.sendMessage("§cWorld not found!");
@@ -117,10 +173,21 @@ public class RocketAnimationPlugin extends JavaPlugin implements CommandExecutor
                 List<PacketEntity<Display.BlockDisplay>> spawned = PacketUtils.spawnBlockStructure(this.packetEntityManager, this.rocketStructure, location, List.of(this.getName()));
                 this.rockets.add(spawned);
 
+                new BukkitRunnable() {
+
+                    @Override
+                    public void run() {
+                        RocketAnimationPlugin.this.updatePlayers();
+                    }
+
+                }.runTaskLater(this, 20);
+
+                sender.sendMessage("§aRockets spawned");
+
             }
             case "list" -> {
 
-                sender.sendMessage("§7Spawned rocket entities");
+                sender.sendMessage("§7Current rocket entities:");
                 for (int i = 0; i < this.rockets.size(); i++) {
                     List<PacketEntity<Display.BlockDisplay>> rocket = this.rockets.get(i);
                     sender.sendMessage("§7" + i + ": " + rocket.size() + " entities, " + rocket.stream().filter(packetEntity -> !packetEntity.isRemoved()).count() + " alive");
@@ -162,15 +229,15 @@ public class RocketAnimationPlugin extends JavaPlugin implements CommandExecutor
     public List<String> onTabComplete(CommandSender sender, Command cmd, String label, String[] args) {
 
         if (args.length < 1) {
-            return List.of("load");
+            return List.of();
+        }
+
+        if (args.length == 1) {
+            return List.of("load", "spawn", "list", "remove", "clear");
         }
 
         return switch (args[0]) {
             case "load" -> {
-
-                if (args.length < 2) {
-                    yield List.of();
-                }
 
                 if (!(sender instanceof Player player)) yield List.of();
 
