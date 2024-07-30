@@ -30,14 +30,14 @@
         <dependency>
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot</artifactId>
-            <version>1.20.4-R0.1-SNAPSHOT</version>
+            <version>1.21-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
             <classifier>remapped-mojang</classifier>
         </dependency>
         <dependency>
             <groupId>net.chaossquad</groupId>
             <artifactId>mclib</artifactId>
-            <version>master-0476ff4e9fee0c2d0fb1de6120265f1bf74ca93a</version>
+            <version>master-2664467dff4c3245835f355d43d9735d23798337</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.json/json -->
         <dependency>
