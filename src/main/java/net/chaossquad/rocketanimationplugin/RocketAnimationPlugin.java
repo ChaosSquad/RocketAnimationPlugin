@@ -236,10 +236,28 @@ public class RocketAnimationPlugin extends JavaPlugin implements CommandExecutor
                 Rocket rocket = this.rockets.get(Integer.parseInt(args[1]));
 
                 rocket.startAnimation(List.of(
-                        new Rocket.Animation(-1, 100, new Vector3f(0, 10, 0)),
-                        new Rocket.Animation(-1, 50, new Vector3f(0, 20, 0)),
-                        new Rocket.Animation(-1, 25, new Vector3f(0, 30, 0)),
-                        new Rocket.Animation(-1, 10, new Vector3f(0, 40, 0))
+                        new Rocket.Animation(-1, 20, new Vector3f(0, 1, 0)),
+                        new Rocket.Animation(-1, 20, new Vector3f(0, 1.5f, 0)),
+                        new Rocket.Animation(-1, 20, new Vector3f(0, 2, 0)),
+                        new Rocket.Animation(-1, 20, new Vector3f(0, 3, 0)),
+                        new Rocket.Animation(-1, 20, new Vector3f(0, 4, 0)),
+                        new Rocket.Animation(-1, 20, new Vector3f(0, 5, 0)),
+                        new Rocket.Animation(-1, 20, new Vector3f(0, 6, 0)),
+                        new Rocket.Animation(-1, 20, new Vector3f(0, 8, 0)),
+                        new Rocket.Animation(-1, 20, new Vector3f(0, 10, 0)),
+                        new Rocket.Animation(-1, 20, new Vector3f(0, 12, 0)),
+                        new Rocket.Animation(-1, 20, new Vector3f(0, 14, 0)),
+                        new Rocket.Animation(-1, 20, new Vector3f(0, 16, 0)),
+                        new Rocket.Animation(-1, 20, new Vector3f(0, 20, 0)),
+                        new Rocket.Animation(-1, 20, new Vector3f(0, 24, 0)),
+                        new Rocket.Animation(-1, 20, new Vector3f(0, 28, 0)),
+                        new Rocket.Animation(-1, 20, new Vector3f(0, 32, 0)),
+                        new Rocket.Animation(-1, 20, new Vector3f(0, 36, 0)),
+                        new Rocket.Animation(-1, 20, new Vector3f(0, 40, 0)),
+                        new Rocket.Animation(-1, 20, new Vector3f(0, 44, 0)),
+                        new Rocket.Animation(-1, 20, new Vector3f(0, 48, 0)),
+                        new Rocket.Animation(-1, 20, new Vector3f(0, 52, 0)),
+                        new Rocket.Animation(-1, 20, new Vector3f(0, 56, 0))
                 ));
 
                 sender.sendMessage("§aAnimation flyup started");
