@@ -9,13 +9,10 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
-import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.util.Transformation;
-import org.bukkit.util.Vector;
-import org.joml.Quaternionf;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.joml.Vector3f;
 
 import java.util.ArrayList;
@@ -23,7 +20,7 @@ import java.util.List;
 
 public class RocketAnimationPlugin extends JavaPlugin implements CommandExecutor, TabCompleter, Listener {
     private BlockStructure rocketStructure;
-    private List<List<BlockDisplay>> rockets;
+    private List<Rocket> rockets;
 
     @Override
     public void onEnable() {
@@ -33,15 +30,20 @@ public class RocketAnimationPlugin extends JavaPlugin implements CommandExecutor
 
         this.rocketStructure = null;
         this.rockets = new ArrayList<>();
+
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                RocketAnimationPlugin.this.rocketTask();
+            }
+        }.runTaskTimer(this, 1, 1);
     }
 
     @Override
     public void onDisable() {
 
-        for (List<BlockDisplay> rockets : this.rockets) {
-            for (BlockDisplay display : rockets) {
-                display.remove();
-            }
+        for (Rocket rocket : this.rockets) {
+            rocket.remove();
         }
 
         this.rockets.clear();
@@ -49,6 +51,23 @@ public class RocketAnimationPlugin extends JavaPlugin implements CommandExecutor
     }
 
     // UTILITIES
+
+    public void rocketTask() {
+
+        for (Rocket rocket : List.copyOf(this.rockets)) {
+
+            if (rocket.isRemoved()) {
+                this.rockets.remove(rocket);
+                continue;
+            }
+
+            if (rocket.isAnimationEnabled()) {
+                rocket.animationTick();
+            }
+
+        }
+
+    }
 
     // LISTENER
 
@@ -126,8 +145,7 @@ public class RocketAnimationPlugin extends JavaPlugin implements CommandExecutor
 
                 // Spawn
 
-                List<BlockDisplay> spawned = WorldUtils.spawnBlockStructure(location.getWorld(), this.rocketStructure, location, List.of(this.getName()));
-                this.rockets.add(spawned);
+                this.rockets.add(new Rocket(WorldUtils.spawnBlockStructure(location.getWorld(), this.rocketStructure, location, List.of(this.getName()))));
 
                 sender.sendMessage("§aRockets spawned");
 
@@ -136,8 +154,8 @@ public class RocketAnimationPlugin extends JavaPlugin implements CommandExecutor
 
                 sender.sendMessage("§7Current rocket entities:");
                 for (int i = 0; i < this.rockets.size(); i++) {
-                    List<BlockDisplay> rocket = this.rockets.get(i);
-                    sender.sendMessage("§7" + i + ": " + rocket.size() + " entities, " + rocket.stream().filter(blockDisplay -> !blockDisplay.isDead()).count() + " alive");
+                    Rocket rocket = this.rockets.get(i);
+                    sender.sendMessage("§7" + i + ": " + rocket.getDisplays().size() + " entities, " + rocket.getDisplays().stream().filter(blockDisplay -> !blockDisplay.isDead()).count() + " alive");
                 }
 
             }
@@ -148,23 +166,17 @@ public class RocketAnimationPlugin extends JavaPlugin implements CommandExecutor
                     return true;
                 }
 
-                List<BlockDisplay> rocket = this.rockets.get(Integer.parseInt(args[1]));
-                for (BlockDisplay entity : rocket) {
-                    entity.remove();
-                }
+                Rocket rocket = this.rockets.get(Integer.parseInt(args[1]));
+                rocket.remove();
 
-                this.rockets.remove(rocket);
                 sender.sendMessage("§aRocket removed");
             }
             case "clear" -> {
 
-                for (List<BlockDisplay> rocket : this.rockets) {
-                    for (BlockDisplay entity : rocket) {
-                        entity.remove();
-                    }
+                for (Rocket rocket : this.rockets) {
+                    rocket.remove();
                 }
 
-                this.rockets.clear();
                 sender.sendMessage("§aCleared all rockets");
             }
             case "reset" -> {
@@ -174,31 +186,63 @@ public class RocketAnimationPlugin extends JavaPlugin implements CommandExecutor
                     return true;
                 }
 
-                List<BlockDisplay> rocket = this.rockets.get(Integer.parseInt(args[1]));
-                for (BlockDisplay entity : rocket) {
-                    entity.setInterpolationDuration(-1);
-                    entity.setInterpolationDelay(-1);
-                    entity.setTransformation(new Transformation(new Vector3f(), new Quaternionf(), new Vector3f(1), new Quaternionf()));
-                }
+                Rocket rocket = this.rockets.get(Integer.parseInt(args[1]));
+                rocket.reset();
 
                 sender.sendMessage("§aRocket reset");
 
             }
-            case "up" -> {
+            case "animation" -> {
 
-                if (args.length < 2) {
-                    sender.sendMessage("§cUsage: /rocketanimation up <id>");
+                if (args.length < 3) {
+                    sender.sendMessage("§cUsage: /rocketanimation animation <rocket> disable/enable/status/stop");
                     return true;
                 }
 
-                List<BlockDisplay> rocket = this.rockets.get(Integer.parseInt(args[1]));
-                for (BlockDisplay entity : rocket) {
-                    entity.setInterpolationDuration(100);
-                    entity.setInterpolationDelay(-1);
-                    entity.setTransformation(new Transformation(new Vector3f(0, 10, 0), new Quaternionf(), new Vector3f(1), new Quaternionf()));
+                Rocket rocket = this.rockets.get(Integer.parseInt(args[1]));
+
+                switch (args[2]) {
+                    case "disable" -> {
+                        rocket.setAnimationEnabled(false);
+                        sender.sendMessage("§aAnimation disabled");
+                    }
+                    case "enable" -> {
+                        rocket.setAnimationEnabled(true);
+                        sender.sendMessage("§aAnimation enabled");
+                    }
+                    case "status" -> {
+                        sender.sendMessage("§7Enabled: " + rocket.isAnimationEnabled());
+                        sender.sendMessage("§7Running: " + rocket.isAnimationRunning());
+                        sender.sendMessage("§7Parts: " + rocket.getAnimationParts().size());
+                        sender.sendMessage("§7Current part: " + rocket.getCurrentAnimationPart());
+                        sender.sendMessage("§7Max part time: " + rocket.getMaxAnimationTime());
+                        sender.sendMessage("§7Current part time: " + rocket.getCurrentAnimationTime());
+                    }
+                    case "stop" -> {
+                        rocket.stopAnimation();
+                        sender.sendMessage("§aAnimation stopped");
+                    }
+                    default -> sender.sendMessage("§cUnknown subcommand");
                 }
 
-                sender.sendMessage("§aRocket moved up");
+            }
+            case "flyup" -> {
+
+                if (args.length < 2) {
+                    sender.sendMessage("§cUsage: /rocketanimation flyup <rocket>");
+                    return true;
+                }
+
+                Rocket rocket = this.rockets.get(Integer.parseInt(args[1]));
+
+                rocket.startAnimation(List.of(
+                        new Rocket.Animation(-1, 100, new Vector3f(0, 10, 0)),
+                        new Rocket.Animation(-1, 50, new Vector3f(0, 20, 0)),
+                        new Rocket.Animation(-1, 25, new Vector3f(0, 30, 0)),
+                        new Rocket.Animation(-1, 10, new Vector3f(0, 40, 0))
+                ));
+
+                sender.sendMessage("§aAnimation flyup started");
 
             }
             default -> sender.sendMessage("§cUnknown subcommand");
@@ -214,7 +258,7 @@ public class RocketAnimationPlugin extends JavaPlugin implements CommandExecutor
         }
 
         if (args.length == 1) {
-            return List.of("load", "spawn", "list", "remove", "clear");
+            return List.of("load", "spawn", "list", "remove", "clear", "reset");
         }
 
         return switch (args[0]) {
@@ -234,6 +278,15 @@ public class RocketAnimationPlugin extends JavaPlugin implements CommandExecutor
                 }
 
                 yield List.of(String.valueOf(value));
+            }
+            case "animation" -> {
+
+                if (args.length == 3) {
+                    yield List.of("disable", "enable", "status", "stop");
+                } else {
+                    yield List.of();
+                }
+
             }
             default -> List.of();
         };
