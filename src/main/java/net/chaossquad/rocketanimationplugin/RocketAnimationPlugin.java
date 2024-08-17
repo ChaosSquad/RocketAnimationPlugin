@@ -235,32 +235,44 @@ public class RocketAnimationPlugin extends JavaPlugin implements CommandExecutor
 
                 Rocket rocket = this.rockets.get(Integer.parseInt(args[1]));
 
-                rocket.startAnimation(List.of(
-                        new Rocket.Animation(-1, 20, new Vector3f(0, 1, 0)),
-                        new Rocket.Animation(-1, 20, new Vector3f(0, 1.5f, 0)),
-                        new Rocket.Animation(-1, 20, new Vector3f(0, 2, 0)),
-                        new Rocket.Animation(-1, 20, new Vector3f(0, 3, 0)),
-                        new Rocket.Animation(-1, 20, new Vector3f(0, 4, 0)),
-                        new Rocket.Animation(-1, 20, new Vector3f(0, 5, 0)),
-                        new Rocket.Animation(-1, 20, new Vector3f(0, 6, 0)),
-                        new Rocket.Animation(-1, 20, new Vector3f(0, 8, 0)),
-                        new Rocket.Animation(-1, 20, new Vector3f(0, 10, 0)),
-                        new Rocket.Animation(-1, 20, new Vector3f(0, 12, 0)),
-                        new Rocket.Animation(-1, 20, new Vector3f(0, 14, 0)),
-                        new Rocket.Animation(-1, 20, new Vector3f(0, 16, 0)),
-                        new Rocket.Animation(-1, 20, new Vector3f(0, 20, 0)),
-                        new Rocket.Animation(-1, 20, new Vector3f(0, 24, 0)),
-                        new Rocket.Animation(-1, 20, new Vector3f(0, 28, 0)),
-                        new Rocket.Animation(-1, 20, new Vector3f(0, 32, 0)),
-                        new Rocket.Animation(-1, 20, new Vector3f(0, 36, 0)),
-                        new Rocket.Animation(-1, 20, new Vector3f(0, 40, 0)),
-                        new Rocket.Animation(-1, 20, new Vector3f(0, 44, 0)),
-                        new Rocket.Animation(-1, 20, new Vector3f(0, 48, 0)),
-                        new Rocket.Animation(-1, 20, new Vector3f(0, 52, 0)),
-                        new Rocket.Animation(-1, 20, new Vector3f(0, 56, 0))
-                ));
+                List<Rocket.Animation> animations = new ArrayList<>();
+                int totalDuration = 150;  // Gesamtdauer der Animation (in Ticks)
+                float totalDistance = 300.0f;  // Gesamthöhe, die die Rakete erreichen soll (300 Blöcke)
+                int steps = 30;  // Anzahl der Schritte in der Animation
+                float acceleration = 2.0f;  // Beschleunigung der Rakete
+
+                for (int i = 0; i < steps; i++) {
+                    float t = (float) i / (steps - 1);  // Normalisierte Zeit (zwischen 0 und 1)
+                    float currentDistance = 0.5f * acceleration * (t * t);  // Quadratische Bewegungsgleichung
+
+                    // Skaliere die aktuelle Entfernung auf die Gesamtdistanz
+                    currentDistance *= totalDistance;
+
+                    int duration = totalDuration / steps;  // Dauer jedes Schritts
+                    Vector3f transformation = new Vector3f(0, currentDistance, 0);  // Verschiebung in y-Richtung
+
+                    animations.add(new Rocket.Animation(0, duration, transformation));
+                }
+
+                rocket.startAnimation(animations);
 
                 sender.sendMessage("§aAnimation flyup started");
+
+            }
+            case "flydown" -> {
+
+                if (args.length < 2) {
+                    sender.sendMessage("§cUsage: /rocketanimation flyup <rocket>");
+                    return true;
+                }
+
+                Rocket rocket = this.rockets.get(Integer.parseInt(args[1]));
+
+                rocket.startAnimation(List.of(
+                        new Rocket.Animation(0, 40, new Vector3f(0, -100, 0))
+                ));
+
+                sender.sendMessage("§aAnimation flydown started");
 
             }
             default -> sender.sendMessage("§cUnknown subcommand");
