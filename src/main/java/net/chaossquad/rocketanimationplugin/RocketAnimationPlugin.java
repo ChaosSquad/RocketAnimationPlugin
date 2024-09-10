@@ -268,9 +268,29 @@ public class RocketAnimationPlugin extends JavaPlugin implements CommandExecutor
 
                 Rocket rocket = this.rockets.get(Integer.parseInt(args[1]));
 
-                rocket.startAnimation(List.of(
-                        new Rocket.Animation(0, 40, new Vector3f(0, -100, 0))
-                ));
+                List<Rocket.Animation> animations = new ArrayList<>();
+                int totalDuration = 150;  // Gesamtdauer der Animation (in Ticks)
+                float totalDistance = 300.0f;  // Gesamthöhe, die die Rakete erreichen soll (300 Blöcke)
+                int steps = 30;  // Anzahl der Schritte in der Animation
+                float acceleration = 2.0f;  // Beschleunigung der Rakete
+
+                for (int i = 0; i < steps; i++) {
+                    float t = (float) i / (steps - 1);  // Normalisierte Zeit (zwischen 0 und 1)
+                    float currentDistance = 0.5f * acceleration * (t * t);  // Quadratische Bewegungsgleichung
+
+                    // Skaliere die aktuelle Entfernung auf die Gesamtdistanz
+                    currentDistance *= totalDistance;
+
+                    // Mache die Entfernung negativ, damit die Rakete nach unten fliegt
+                    currentDistance = -currentDistance;
+
+                    int duration = totalDuration / steps;  // Dauer jedes Schritts
+                    Vector3f transformation = new Vector3f(0, currentDistance, 0);  // Verschiebung in y-Richtung nach unten
+
+                    animations.add(new Rocket.Animation(0, duration, transformation));
+                }
+
+                rocket.startAnimation(animations);
 
                 sender.sendMessage("§aAnimation flydown started");
 
