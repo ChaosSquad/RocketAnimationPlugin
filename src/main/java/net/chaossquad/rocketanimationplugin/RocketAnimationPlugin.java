@@ -308,7 +308,7 @@ public class RocketAnimationPlugin extends JavaPlugin implements CommandExecutor
         }
 
         if (args.length == 1) {
-            return List.of("load", "spawn", "list", "remove", "clear", "reset");
+            return List.of("load", "spawn", "list", "remove", "clear", "reset", "animation", "flyup", "flydown");
         }
 
         return switch (args[0]) {
